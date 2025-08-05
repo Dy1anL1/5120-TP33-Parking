@@ -1,10 +1,14 @@
 body {
-  font-family: Arial;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
   text-align: center;
-  margin-top: 100px;
 }
 
-button {
-  padding: 10px 200px;
-  font-size: 20px;
+#map {
+  height: 500px;
+  width: 90%;
+  margin: 20px auto;
+  border: 2px solid #aaa;
+  border-radius: 8px;
 }
