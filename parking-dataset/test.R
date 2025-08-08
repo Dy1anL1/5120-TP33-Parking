@@ -2,7 +2,7 @@ library(lubridate)
 library(dplyr)
 library(tidyr)
 
-sensor <- read.csv("on-street-parking-bay-sensors.csv")
+sensor <- read.csv("on-street-parking-bay-sensors-7to9th.csv")
 bay <- read.csv("on-street-parking-bays.csv")
 street <- read.csv("parking-zones-linked-to-street-segments.csv")
 
@@ -88,6 +88,9 @@ parking <- sensor_bay_street %>%
 parking <- parking %>%
   mutate(status = ifelse(Status_Description == "Present", 1, 0))
 
-# export parking data
-write.csv(parking, "parking_info.csv", row.names = FALSE)
+parking <- parking %>%
+  slice(1:1937)
 
+
+# export parking data
+write.csv(parking, "parking_test.csv", row.names = FALSE)

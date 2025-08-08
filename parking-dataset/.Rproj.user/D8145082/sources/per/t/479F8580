@@ -1,0 +1,27 @@
+{
+    "id": "479F8580",
+    "path": "F:/2025master/FIT5120/GitHub/5120-TP33-Parking/parking-dataset/train.R",
+    "project_path": "train.R",
+    "type": "r_source",
+    "hash": "544856539",
+    "contents": "",
+    "dirty": true,
+    "created": 1754481557663.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "91,58",
+        "scrollLine": "68"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1754662570,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1754662570,
+    "read_only": false,
+    "read_only_alternatives": []
+}
