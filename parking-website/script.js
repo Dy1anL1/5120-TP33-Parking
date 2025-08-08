@@ -1,3 +1,9 @@
+// ========================================================================================
+// script.js 
+// Include: map loading + GeoJSON data loading + auto-refresh + relative time display
+// ========================================================================================
+
+// Initial Map
 const map = L.map('map').setView([-37.8136, 144.9631], 14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: 'Map data © OpenStreetMap contributors'
@@ -6,6 +12,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let parkingLayer = null;
 let allFeatures = [];
 
+// Relative time display (minutes/hours/days)
 function getRelativeTime(timestamp) {
   const now = new Date();
   const past = new Date(timestamp);
@@ -19,6 +26,7 @@ function getRelativeTime(timestamp) {
   return `${Math.floor(diffHours / 24)} days ago`;
 }
 
+// GeoJSON data loading
 function loadParkingData() {
   if (parkingLayer) map.removeLayer(parkingLayer);
 
@@ -81,6 +89,8 @@ document.getElementById("searchBox").addEventListener("input", e => {
   updateList(filtered);
 });
 
-// Init
+// Initial Loading
 loadParkingData();
+
+// Refresh the data every 60s
 setInterval(loadParkingData, 60000);
