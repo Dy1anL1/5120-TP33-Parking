@@ -89,4 +89,4 @@ parking <- parking %>%
   mutate(status = ifelse(Status_Description == "Present", 1, 0))
 
 # export parking data
-write.csv(parking, "parking_test.csv", row.names = FALSE)
+write.csv(parking, "parking_train.csv", row.names = FALSE)
