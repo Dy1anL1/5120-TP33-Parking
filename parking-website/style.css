@@ -1,14 +1,57 @@
 body {
   margin: 0;
-  padding: 0;
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  background: #2c3e50;
+  color: white;
+  padding: 1rem;
   text-align: center;
 }
 
+.container {
+  display: flex;
+  height: calc(100vh - 80px);
+}
+
+#sidebar {
+  width: 300px;
+  padding: 1rem;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+  background: #f8f8f8;
+}
+
+#searchBox {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+#parkingList {
+  list-style: none;
+  padding: 0;
+}
+
+#parkingList li {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+#parkingList li:hover {
+  background: #e0f7fa;
+}
+
+main {
+  flex-grow: 1;
+}
+
 #map {
-  height: 500px;
+  height: 90%;
   width: 90%;
-  margin: 20px auto;
-  border: 2px solid #aaa;
-  border-radius: 8px;
 }
