@@ -84,5 +84,10 @@ parking <- sensor_bay_street %>%
   filter(!(is.na(Zone_Number) | is.na(RoadSegmentID)))
 
 
-# Start to build model
+# Using 0 or 1 to indicates parking space status
+parking <- parking %>%
+  mutate(status = ifelse(Status_Description == "Present", 1, 0))
+
+# export parking data
+write.csv(parking, "parking_info.csv", row.names = FALSE)
 
