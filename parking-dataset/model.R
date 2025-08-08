@@ -78,3 +78,7 @@ sensor_bay_street <- sensor_bay_street %>%
     StreetTo = if_else(is.na(StreetTo) | StreetTo == "", StreetTo_new, StreetTo)
   ) %>%
   select(-OnStreet_new, -StreetFrom_new, -StreetTo_new)
+
+# Remove rows with missing data
+parking <- sensor_bay_street %>%
+  filter(!(is.na(Zone_Number) | is.na(RoadSegmentID)))
