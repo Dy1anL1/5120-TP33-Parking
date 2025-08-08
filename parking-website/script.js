@@ -27,12 +27,16 @@ function getRelativeTime(timestamp) {
 }
 
 // GeoJSON data loading
+let lastRefreshed = null;
+
 function loadParkingData() {
   if (parkingLayer) map.removeLayer(parkingLayer);
 
   fetch('https://data.melbourne.vic.gov.au/api/v2/catalog/datasets/on-street-parking-bay-sensors/exports/geojson')
     .then(res => res.json())
     .then(data => {
+      lastRefreshed = new Date(); // ⏱️ 更新统一时间
+
       allFeatures = data.features;
 
       parkingLayer = L.geoJSON(data, {
@@ -43,12 +47,14 @@ function loadParkingData() {
         },
         onEachFeature: (feature, layer) => {
           const desc = feature.properties.status_description;
-          const updated = getRelativeTime(feature.properties.status_timestamp);
+          const updated = getRelativeTime(lastRefreshed); // 🔄 使用统一时间
+
           layer.bindPopup(`
             <strong>Kerbside ID:</strong> ${feature.properties.kerbsideid}<br>
             <strong>Status:</strong> ${desc}<br>
             <strong>Last updated:</strong> ${updated}
           `);
+
           feature.layerRef = layer;
         }
       }).addTo(map);
@@ -64,10 +70,10 @@ function updateList(features) {
   features.slice(0, 100).forEach(f => {
     const li = document.createElement("li");
     const status = f.properties.status_description;
-    const updated = getRelativeTime(f.properties.status_timestamp);
+    const updated = getRelativeTime(lastRefreshed);
     li.innerHTML = `
       <strong>${f.properties.kerbsideid || "Unknown ID"}</strong><br>
-      ${status} – ${updated}
+      ${status} - ${updated}
     `;
     li.onclick = () => {
       const latlng = f.geometry.coordinates.reverse(); // GeoJSON is [lng, lat]
