@@ -7,8 +7,21 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <h1>Real-time Parking Bay Availability</h1>
-  <div id="map"></div>
+  <header>
+    <h1>Melbourne CBD Parking Availability</h1>
+  </header>
+
+  <div class="container">
+    <aside id="sidebar">
+      <input type="text" id="searchBox" placeholder="Search by street or ID..." />
+      <ul id="parkingList"></ul>
+    </aside>
+    
+    <main>
+      <div id="map"></div>
+    </main>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
 </body>
