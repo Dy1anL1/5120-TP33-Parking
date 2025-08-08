@@ -42,9 +42,6 @@ bay$Location <- NULL
 bay$LastUpdated <- NULL
 
 
-
-
-
 sensor_time <- sensor_time %>%
   mutate(KerbsideID = as.character(KerbsideID))
 
@@ -54,5 +51,30 @@ bay <- bay %>%
 sensor_bay <- sensor_time %>%
   left_join(bay, by = "KerbsideID")
 
+# left join sensor_bay to street by zone id and road segment id
+sensor_bay_street <- sensor_bay %>%
+  left_join(street, by = c("Zone_Number" = "ParkingZone", "RoadSegmentID" = "Segment_ID"))
 
 
+# complete the missing road information according to the road description
+sensor_bay_street <- sensor_bay_street %>%
+  mutate(
+    OnStreet = if_else(is.na(OnStreet) | OnStreet == "", 
+                       NA_character_, OnStreet),
+    StreetFrom = if_else(is.na(StreetFrom) | StreetFrom == "", 
+                         NA_character_, StreetFrom),
+    StreetTo = if_else(is.na(StreetTo) | StreetTo == "", 
+                       NA_character_, StreetTo)
+  ) %>%
+  extract(
+    col = "RoadSegmentDescription",
+    into = c("OnStreet_new", "StreetFrom_new", "StreetTo_new"),
+    regex = "^(.*?) between (.*?) and (.*)$",
+    remove = FALSE
+  ) %>%
+  mutate(
+    OnStreet = if_else(is.na(OnStreet) | OnStreet == "", OnStreet_new, OnStreet),
+    StreetFrom = if_else(is.na(StreetFrom) | StreetFrom == "", StreetFrom_new, StreetFrom),
+    StreetTo = if_else(is.na(StreetTo) | StreetTo == "", StreetTo_new, StreetTo)
+  ) %>%
+  select(-OnStreet_new, -StreetFrom_new, -StreetTo_new)
