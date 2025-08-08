@@ -82,3 +82,7 @@ sensor_bay_street <- sensor_bay_street %>%
 # Remove rows with missing data
 parking <- sensor_bay_street %>%
   filter(!(is.na(Zone_Number) | is.na(RoadSegmentID)))
+
+
+# Start to build model
+
