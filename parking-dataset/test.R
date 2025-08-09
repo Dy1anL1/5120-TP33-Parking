@@ -91,6 +91,12 @@ parking <- parking %>%
 parking <- parking %>%
   slice(1:1937)
 
+# export parking data
+write.csv(parking, "parking_results_for_comparison.csv", row.names = FALSE)
+
+# delete the target row
+parking$Status_Description <- NULL
+parking$status <- NULL
 
 # export parking data
 write.csv(parking, "parking_test.csv", row.names = FALSE)
