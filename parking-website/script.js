@@ -35,7 +35,7 @@ function loadParkingData() {
   fetch('https://data.melbourne.vic.gov.au/api/v2/catalog/datasets/on-street-parking-bay-sensors/exports/geojson')
     .then(res => res.json())
     .then(data => {
-      lastRefreshed = new Date(); // ⏱️ 更新统一时间
+      lastRefreshed = new Date(); // Updating the Unified Time
 
       allFeatures = data.features;
 
@@ -47,7 +47,7 @@ function loadParkingData() {
         },
         onEachFeature: (feature, layer) => {
           const desc = feature.properties.status_description;
-          const updated = getRelativeTime(lastRefreshed); // 🔄 使用统一时间
+          const updated = getRelativeTime(lastRefreshed); // Use the Unified Time
 
           layer.bindPopup(`
             <strong>Kerbside ID:</strong> ${feature.properties.kerbsideid}<br>
@@ -99,4 +99,4 @@ document.getElementById("searchBox").addEventListener("input", e => {
 loadParkingData();
 
 // Refresh the data every 60s
-setInterval(loadParkingData, 60000);
+setInterval(loadParkingData, 10000);
