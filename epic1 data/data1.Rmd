@@ -1,0 +1,49 @@
+---
+title: "epic1"
+output: html_document
+date: "2025-08-08"
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+data <- read.csv("Australian Bureau of Statistics-2.csv")
+```
+
+```{r}
+nm  <- names(data)
+idx <- grepl("^Between[._ ]\\d{4}[._ ]and[._ ]\\d{4}$", nm)  
+nm[idx] <- sub("^Between[._ ](\\d{4}).*$", "\\1", nm[idx])
+names(data) <- nm
+
+```
+
+```{r}
+data <- data %>% 
+  slice(1:10) 
+```
+
+```{r}
+year_cols <- c("2016", "2017", "2018", "2019", "2020")
+
+df_long <- data %>%
+  select(State = X, all_of(year_cols)) %>%
+  pivot_longer(
+    cols = -State,
+    names_to = "Year",
+    values_to = "Number"
+  ) %>%
+  mutate(
+    Number = as.numeric(gsub(",", "", Number)),
+    Year = as.integer(Year)
+  )
+
+ggplot(df_long, aes(x = Year, y = Number, color = State, group = State)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal()
+
+```

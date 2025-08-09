@@ -1,0 +1,1 @@
+"0","data2 <- data2[rowSums(!is.na(data2)) > 0, ]"

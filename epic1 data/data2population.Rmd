@@ -1,0 +1,63 @@
+---
+title: "data2"
+output: html_document
+date: "2025-08-09"
+---
+
+```{r}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+data2 <- read_excel("32180DS0001_2001-21.xlsx", sheet = "Table 5")
+
+```
+
+```{r}
+data2 <- data2[ , -1]
+```
+
+```{r}
+data2 <- data2[-c(1:5, 7), ]
+```
+
+
+
+```{r}
+first_empty_col <- which(colSums(!is.na(data2)) == 0)[1]
+
+if (!is.na(first_empty_col)) {
+  data2 <- data2[, 1:(first_empty_col - 1)]
+}
+```
+
+```{r}
+data2 <- data2[rowSums(!is.na(data2)) > 0, ]
+```
+
+```{r}
+
+names(data2)[1] <- "State"
+
+data2 <- data2 %>%
+  mutate(
+    State = recode(
+      State,
+      "New South Wales"             = "NSW",
+      "Victoria"                    = "Vic.",
+      "Queensland"                  = "Qld",
+      "South Australia"             = "SA",
+      "Western Australia"           = "WA",
+      "Tasmania"                     = "Tas.",
+      "Northern Territory"          = "NT",
+      "Australian Capital Territory"= "ACT",
+      "TOTAL AUSTRALIA"              = "Aust."
+    )
+  )
+
+```
+
+```{r}
+
+```

@@ -1,0 +1,5 @@
+"0","first_empty_col <- which(colSums(!is.na(data2)) == 0)[1]"
+"0",""
+"0","if (!is.na(first_empty_col)) {"
+"0","  data2 <- data2[, 1:(first_empty_col - 1)]"
+"0","}"
