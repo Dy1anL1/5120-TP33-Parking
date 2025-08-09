@@ -1,6 +1,0 @@
-"0","library(readr)"
-"0","library(dplyr)"
-"0","library(tidyr)"
-"0","library(ggplot2)"
-"0",""
-"0","data <- read.csv(""Australian Bureau of Statistics-2.csv"")"

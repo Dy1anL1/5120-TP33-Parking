@@ -60,4 +60,33 @@ data2 <- data2 %>%
 
 ```{r}
 
+names(data2) <- as.character(unlist(data2[1, ]))
+
+data2 <- data2[-1, ]
+
+names(data2)[1] <- "State"
+
+```
+
+```{r}
+df_long <- data2 %>%
+  pivot_longer(
+    cols = -State,
+    names_to = "Year",
+    values_to = "Population"
+  ) %>%
+  mutate(
+    Year = as.integer(Year),
+    Population = as.numeric(Population)
+  )
+
+ggplot(df_long, aes(x = Year, y = Population, color = State, group = State)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(
+    title = "Population by State (2001–2021)",
+    x = "Year",
+    y = "Population"
+  )
 ```

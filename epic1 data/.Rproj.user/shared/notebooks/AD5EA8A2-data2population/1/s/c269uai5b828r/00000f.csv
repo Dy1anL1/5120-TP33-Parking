@@ -1,7 +1,0 @@
-"0","library(readxl)"
-"0","library(dplyr)"
-"0","library(tidyr)"
-"0","library(ggplot2)"
-"0",""
-"0","data2 <- read_excel(""32180DS0001_2001-21.xlsx"", sheet = ""Table 5"")"
-"2","New names:"

@@ -1,5 +1,0 @@
-"0","nm  <- names(data)"
-"0","idx <- grepl(""^Between[._ ]\\d{4}[._ ]and[._ ]\\d{4}$"", nm)  "
-"0","nm[idx] <- sub(""^Between[._ ](\\d{4}).*$"", ""\\1"", nm[idx])"
-"0","names(data) <- nm"
-"0",""
