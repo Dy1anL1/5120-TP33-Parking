@@ -88,9 +88,5 @@ parking <- sensor_bay_street %>%
 parking <- parking %>%
   mutate(status = ifelse(Status_Description == "Present", 1, 0))
 
-# delete the target row
-parking$Status_Description <- NULL
-parking$status <- NULL
-
 # export parking data
 write.csv(parking, "parking_train.csv", row.names = FALSE)
