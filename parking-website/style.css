@@ -1,8 +1,10 @@
+/**/
 body {
   margin: 0;
   font-family: Arial, sans-serif;
 }
 
+/*Header box*/
 header {
   background: #2c3e50;
   color: white;
@@ -17,7 +19,7 @@ header {
 
 #sidebar {
   width: 300px;
-  padding: 1rem;
+  padding: 1.5rem;
   border-right: 1px solid #ddd;
   overflow-y: auto;
   background: #f8f8f8;
