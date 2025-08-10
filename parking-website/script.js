@@ -44,6 +44,14 @@ function getRelativeTime(dateObj) {
   return `${Math.floor(hr / 24)} days ago`;
 }
 
+// Render markers for the given rows: clears the layer and re-adds only those rows' markers
+function renderMarkers(rows) {
+  layerOfBays.clearLayers();
+  rows.forEach((row) => {
+    if (row.marker) row.marker.addTo(layerOfBays);
+  });
+}
+
 // ------------------------------------------
 // main loader: grab the CSV and stash rows
 // ------------------------------------------
@@ -59,7 +67,7 @@ function loadParking() {
     complete: (result) => {
       lastRefreshed = new Date();
 
-      // Filter out rows that don't have coordinates
+      // keep only rows that have coordinates
       rowsAll = (result.data || []).filter(r =>
         r &&
         typeof r.latitude !== 'undefined' &&
@@ -68,14 +76,13 @@ function loadParking() {
         r.latitude !== '' && r.longitude !== ''
       );
 
-      // Render markers on the map
+      // Render markers on the map (filtered if checkbox is ticked)
       rowsAll.forEach((row) => {
         const lat = Number(row.latitude);
         const lng = Number(row.longitude);
         if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-        // Color by status: Present = occupied (red), others = unoccupied (green)
-        const isOccupied = String(row.Status_Description || '').trim() === 'Present';
+        const isOccupied = String(row.Status_Description || '').trim().toLowerCase() === 'present';
         const color = isOccupied ? 'red' : 'green';
 
         const marker = L.circleMarker([lat, lng], {
@@ -83,7 +90,6 @@ function loadParking() {
           color
         });
 
-        // Build popup HTML using fields from your CSV
         const updated = getRelativeTime(lastRefreshed);
         const popupHtml = `
           <strong>Kerbside ID:</strong> ${row.KerbsideID ?? '-'}<br>
@@ -96,16 +102,14 @@ function loadParking() {
         `;
         marker.bindPopup(popupHtml);
 
-        // Attach a reference so we can open popup from the list
         row.lat = lat;
         row.lng = lng;
         row.marker = marker;
-
-        marker.addTo(layerOfBays);
       });
 
       // Update the side list with all rows initially
       currentFilteredRows = rowsAll.slice();
+      applyFilters();  // <-- this will update both the LIST and the MAP
       updateList(currentFilteredRows);
     },
     error: (err) => {
@@ -122,7 +126,7 @@ function updateList(rows) {
   if (!list) return;
   list.innerHTML = '';
 
-  // Limit to avoid rendering too many list items at once
+  // keep the list short for readability
   rows.slice(0, 200).forEach((row) => {
     const li = document.createElement('li');
 
@@ -130,6 +134,7 @@ function updateList(rows) {
     const idText = row.KerbsideID ? String(row.KerbsideID) : 'Unknown ID';
     const statusText = row.Status_Description ? String(row.Status_Description) : 'Unknown';
     const streetText = row.OnStreet ? String(row.OnStreet) : '';
+    
     li.innerHTML = `
       <strong>${idText}</strong><br>
       ${statusText} - ${updated}<br>
@@ -147,9 +152,17 @@ function updateList(rows) {
   });
 }
 
-// Attach search & filter handlers
+// Attach search & filter
 const searchInput = document.getElementById('searchBox');
 const onlyAvailableCheckbox = document.getElementById('onlyAvailable');
+
+// Call filters when user types or toggles the checkbox
+if (searchInput) {
+  searchInput.addEventListener('input', applyFilters);
+}
+if (onlyAvailableCheckbox) {
+  onlyAvailableCheckbox.addEventListener('change', applyFilters);
+}
 
 // Apply both search term and "only available" filter
 function applyFilters() {
@@ -161,30 +174,23 @@ function applyFilters() {
     const status = String(row.Status_Description ?? '').toLowerCase();
     const street = String(row.OnStreet ?? '').toLowerCase();
 
-    // 1) Search filter
+    // Search filter
     const matchesSearch =
       !term || id.includes(term) || status.includes(term) || street.includes(term);
 
-    // 2) Availability filter (true = only show unoccupied)
+    // Availability filter
     const matchesAvailability =
-      !onlyAvailable || status === 'unoccupied'; // lowercase compare
+      !onlyAvailable || status === 'unoccupied'; // show only free bays if checked
 
     return matchesSearch && matchesAvailability;
   });
 
+  renderMarkers(currentFilteredRows);
   updateList(currentFilteredRows);
 }
 
-if (searchInput) {
-  searchInput.addEventListener('input', applyFilters);
-}
-
-if (onlyAvailableCheckbox) {
-  onlyAvailableCheckbox.addEventListener('change', applyFilters);
-}
-
-// ----------------------------
-// Kick off + 10s auto-refresh
-// ----------------------------
+// ----------------------------------
+// initial pull + refresh every 10s
+// ----------------------------------
 loadParking();
 setInterval(loadParking, 10000); // refresh every 10 seconds
