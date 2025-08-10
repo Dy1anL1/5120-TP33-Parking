@@ -17,7 +17,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // -------------
 // Global state
 // -------------
-const CSV_URL = `${location.origin}/5120-TP33-Parking/parking-dataset/parking_results_for_comparison.csv`;
+const CSV_URL = '../parking-dataset/parking_results_for_comparison.csv';
 
 // state we keep in memory
 let lastRefreshed = null;                      // when we last pulled the CSV
