@@ -356,7 +356,7 @@ if (destBtn) {
     const pt = await geocodeAddress(q);
     if (!pt) {
       alert('Destination not found. Try a more specific address.');
-      return;
+      return; 
     }
     // 2) drop a small marker for destination (optional)
     L.circleMarker([pt.lat, pt.lon], { radius: 6, color: '#0066ff' })
