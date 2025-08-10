@@ -1,59 +1,67 @@
-/**/
+/* =======================
+        Global Styles
+   ======================= */
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
+  margin: 0; /* Remove default margin */
+  font-family: Arial, sans-serif; /* Clean, readable font */
 }
 
-/*Header box*/
+/* Header */
 header {
-  background: #2c3e50;
-  color: white;
-  padding: 1rem;
-  text-align: center;
+  background: #2c3e50; /* Dark blue-grey background */
+  color: white;        /* White text for contrast */
+  padding: 1rem;       /* Space around the text */
+  text-align: center;  /* Center the header text */
 }
 
+/* Layout Container */
 .container {
-  display: flex;
-  height: calc(100vh - 80px);
+  display: flex; /* Side-by-side layout: sidebar + main content */
+  height: calc(100vh - 80px); /* Fill remaining height minus header (approx 80px) */
 }
 
+/* Sidebar */
 #sidebar {
-  width: 300px;
-  padding: 1.5rem;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
-  background: #f8f8f8;
+  width: 300px;                /* Fixed sidebar width */
+  padding: 20px;               /* Inner spacing */
+  border-right: 1px solid #ddd;/* Separator line between sidebar and main */
+  overflow-y: auto;            /* Scroll if content exceeds height */
+  background: #f8f8f8;         /* Light grey background */
 }
 
+/* Search Box */
 #searchBox {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
+  width: 100%;      /* Full width */
+  padding: 8px;     /* Inner padding */
+  margin-bottom: 10px; /* Space below the box */
 }
 
+/* Parking List */
 #parkingList {
-  list-style: none;
-  padding: 0;
+  list-style: none; /* Remove bullet points */
+  padding: 0;       /* Remove default padding */
 }
 
 #parkingList li {
-  background: white;
-  border: 1px solid #ccc;
-  padding: 8px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
+  background: white;           /* White card background */
+  border: 1px solid #ccc;      /* Light border */
+  padding: 8px;                /* Inner spacing */
+  margin-bottom: 8px;          /* Space between list items */
+  cursor: pointer;             /* Pointer cursor on hover */
+  transition: background 0.3s; /* Smooth background change */
 }
 
 #parkingList li:hover {
-  background: #e0f7fa;
+  background: #e0f7fa; /* Light blue highlight on hover */
 }
 
+/* Main Map Area */
 main {
-  flex-grow: 1;
+  flex-grow: 1; /* Take up all remaining space */
 }
 
 #map {
-  height: 90%;
-  width: 90%;
+  /* Recommended change: make it fill the main area fully */
+  height: 95%;
+  width: 98%;
 }
