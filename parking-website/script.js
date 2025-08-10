@@ -149,6 +149,8 @@ function loadParking() {
     dynamicTyping: true,  // auto-convert numbers/booleans
     skipEmptyLines: true,
     complete: (result) => {
+      console.log('CSV loaded rows:', result.data?.length);
+      
       lastRefreshed = new Date();
 
       // keep only rows that have coordinates
@@ -199,6 +201,7 @@ function loadParking() {
     },
     error: (err) => {
       console.error('Failed to parse CSV:', err);
+      alert('Failed to load parking CSV. Check server root and CSV path.');
     }
   });
 }
