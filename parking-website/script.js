@@ -109,8 +109,7 @@ function loadParking() {
 
       // Update the side list with all rows initially
       currentFilteredRows = rowsAll.slice();
-      applyFilters();  // <-- this will update both the LIST and the MAP
-      updateList(currentFilteredRows);
+      applyFilters();  // this will update both the LIST and the MAP
     },
     error: (err) => {
       console.error('Failed to parse CSV:', err);
@@ -170,17 +169,15 @@ function applyFilters() {
   const onlyAvailable = onlyAvailableCheckbox.checked;
 
   currentFilteredRows = rowsAll.filter((row) => {
-    const id = String(row.KerbsideID ?? '').toLowerCase();
-    const status = String(row.Status_Description ?? '').toLowerCase();
-    const street = String(row.OnStreet ?? '').toLowerCase();
+    const id = String(row.KerbsideID ?? '').toLowerCase().trim();
+    const status = String(row.Status_Description ?? '').toLowerCase().trim();
+    const street = String(row.OnStreet ?? '').toLowerCase().trim();
 
     // Search filter
-    const matchesSearch =
-      !term || id.includes(term) || status.includes(term) || street.includes(term);
+    const matchesSearch = !term || id.includes(term) || status.includes(term) || street.includes(term);
 
     // Availability filter
-    const matchesAvailability =
-      !onlyAvailable || status === 'unoccupied'; // show only free bays if checked
+    const matchesAvailability = !onlyAvailable || status === 'unoccupied'; // show only free bays if checked
 
     return matchesSearch && matchesAvailability;
   });
