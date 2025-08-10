@@ -21,7 +21,7 @@ const CSV_URL = `${location.origin}/5120-TP33-Parking/parking-dataset/parking_re
 
 // state we keep in memory
 let lastRefreshed = null;                      // when we last pulled the CSV
-let layerOfBays = L.layerGroup().addTo(map);  // current markers on map
+let layerOfBays = L.layerGroup().addTo(map);   // current markers on map
 let rowsAll = [];                              // all parsed rows
 let currentFilteredRows = [];                  // rows after filters
 
@@ -62,7 +62,23 @@ function haversineMeters(lat1, lon1, lat2, lon2) {
 
 // Geocode with Nominatim (returns {lat, lon} or null)
 async function geocodeAddress(q) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}&addressdetails=0`;
+  // Viewbox = [left,top,right,bottom] in lon,lat
+  // This box roughly covers inner Melbourne (adjust if needed)
+  const left   = 144.90;  // min lon
+  const right  = 145.05;  // max lon
+  const top    = -37.70;  // max lat (less negative = further north)
+  const bottom = -38.10;  // min lat (more negative = further south)
+  
+  const url =
+    `https://nominatim.openstreetmap.org/search` +
+    `?format=json` +
+    `&limit=1` +
+    `&addressdetails=0` +
+    `&countrycodes=au` +                               // restrict to Australia
+    `&viewbox=${left},${top},${right},${bottom}` +     // Melbourne-ish bounding box
+    `&bounded=1` +                                     // results must be inside the viewbox
+    `&q=${encodeURIComponent(q + ' Melbourne')}`;      // bias the query to Melbourne
+
   const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
   if (!res.ok) return null;
   const data = await res.json();
@@ -129,8 +145,8 @@ function loadParking() {
 
   Papa.parse(`${CSV_URL}?t=${Date.now()}`, {
     download: true,
-    header: true,       // use the first row as keys
-    dynamicTyping: true, // auto-convert numbers/booleans
+    header: true,         // use the first row as keys
+    dynamicTyping: true,  // auto-convert numbers/booleans
     skipEmptyLines: true,
     complete: (result) => {
       lastRefreshed = new Date();
