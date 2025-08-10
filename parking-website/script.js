@@ -1,45 +1,55 @@
 // ========================================================================================
-// script.js (CSV-driven rendering)
-// Uses Leaflet + Papa Parse to load a CSV and plot parking bays.
-// List + search + 10s auto-refresh + unified "Last updated" display.
+// script.js
+// - loads a CSV (Papa Parse)
+// - draws points with Leaflet
+// - supports search + "Only show available" filter
+// - refreshes every 10s
 // ========================================================================================
 
+// --------------------
 // Map initialization
+// --------------------
 const map = L.map('map').setView([-37.8136, 144.9631], 14);
-
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: 'Map data © OpenStreetMap contributors'
 }).addTo(map);
 
+// -------------
 // Global state
+// -------------
 const CSV_URL = '../parking-dataset/parking_results_for_comparison.csv';
 
-let lastRefreshed = null;       // unified "Last updated" timestamp (when CSV was fetched)
-let markersLayer = L.layerGroup().addTo(map);  // holds all circle markers
-let allRows = [];               // array of parsed CSV rows (objects)
-let currentFilteredRows = [];   // rows after search filter (for list rendering)
+// state we keep in memory
+let lastRefreshed = null;                      // when we last pulled the CSV
+let layerOfBays = L.layerGroup().addTo(map);  // current markers on map
+let rowsAll = [];                              // all parsed rows
+let currentFilteredRows = [];                  // rows after filters
 
-// Utility: relative time formatter
+// --------------------------------------------------------
+// Utility: relative time formatter: like "3 minutes ago"
+// --------------------------------------------------------
 function getRelativeTime(dateObj) {
   if (!dateObj) return 'just now';
   const now = new Date();
   const diffMs = now - dateObj;
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
+  const sec = Math.floor(diffMs / 1000);
+  const min = Math.floor(sec / 60);
+  const hr  = Math.floor(min / 60);
 
-  if (diffSecs < 1) return 'just now';
-  if (diffSecs < 60) return `${diffSecs} seconds ago`;
-  if (diffMins === 1) return '1 minute ago';
-  if (diffMins < 60) return `${diffMins} minutes ago`;
-  if (diffHours < 24) return `${diffHours} hours ago`;
-  return `${Math.floor(diffHours / 24)} days ago`;
+  if (sec < 1) return 'just now';
+  if (sec < 60) return `${sec} seconds ago`;
+  if (min === 1) return '1 minute ago';
+  if (min < 60) return `${min} minutes ago`;
+  if (hr < 24) return `${hr} hours ago`;
+  return `${Math.floor(hr / 24)} days ago`;
 }
 
-// Core: load & render CSV
-function loadParkingData() {
+// ------------------------------------------
+// main loader: grab the CSV and stash rows
+// ------------------------------------------
+function loadParking() {
   // Clear old markers from the map
-  markersLayer.clearLayers();
+  layerOfBays.clearLayers();
 
   Papa.parse(CSV_URL, {
     download: true,
@@ -50,7 +60,7 @@ function loadParkingData() {
       lastRefreshed = new Date();
 
       // Filter out rows that don't have coordinates
-      allRows = (result.data || []).filter(r =>
+      rowsAll = (result.data || []).filter(r =>
         r &&
         typeof r.latitude !== 'undefined' &&
         typeof r.longitude !== 'undefined' &&
@@ -59,7 +69,7 @@ function loadParkingData() {
       );
 
       // Render markers on the map
-      allRows.forEach((row) => {
+      rowsAll.forEach((row) => {
         const lat = Number(row.latitude);
         const lng = Number(row.longitude);
         if (Number.isNaN(lat) || Number.isNaN(lng)) return;
@@ -76,26 +86,26 @@ function loadParkingData() {
         // Build popup HTML using fields from your CSV
         const updated = getRelativeTime(lastRefreshed);
         const popupHtml = `
-          <strong>Kerbside ID:</strong> ${row.KerbsideID ?? '—'}<br>
+          <strong>Kerbside ID:</strong> ${row.KerbsideID ?? '-'}<br>
           <strong>Status:</strong> ${row.Status_Description ?? 'Unknown'}<br>
-          <strong>Street:</strong> ${row.OnStreet ?? '—'}<br>
-          <strong>Between:</strong> ${row.StreetFrom ?? '—'} and ${row.StreetTo ?? '—'}<br>
-          <strong>Zone:</strong> ${row.Zone_Number ?? '—'}<br>
-          <strong>Segment:</strong> ${row.RoadSegmentID ?? '—'}<br>
+          <strong>Street:</strong> ${row.OnStreet ?? '-'}<br>
+          <strong>Between:</strong> ${row.StreetFrom ?? '-'} and ${row.StreetTo ?? '-'}<br>
+          <strong>Zone:</strong> ${row.Zone_Number ?? '-'}<br>
+          <strong>Segment:</strong> ${row.RoadSegmentID ?? '-'}<br>
           <strong>Last updated:</strong> ${updated}
         `;
         marker.bindPopup(popupHtml);
 
         // Attach a reference so we can open popup from the list
-        row.__lat = lat;
-        row.__lng = lng;
-        row.__marker = marker;
+        row.lat = lat;
+        row.lng = lng;
+        row.marker = marker;
 
-        marker.addTo(markersLayer);
+        marker.addTo(layerOfBays);
       });
 
       // Update the side list with all rows initially
-      currentFilteredRows = allRows.slice();
+      currentFilteredRows = rowsAll.slice();
       updateList(currentFilteredRows);
     },
     error: (err) => {
@@ -104,7 +114,9 @@ function loadParkingData() {
   });
 }
 
+// --------------
 // List & search
+// --------------
 function updateList(rows) {
   const list = document.getElementById('parkingList');
   if (!list) return;
@@ -125,9 +137,9 @@ function updateList(rows) {
     `;
 
     li.onclick = () => {
-      if (typeof row.__lat === 'number' && typeof row.__lng === 'number') {
-        map.setView([row.__lat, row.__lng], 17);
-        if (row.__marker) row.__marker.openPopup();
+      if (typeof row.lat === 'number' && typeof row.lng === 'number') {
+        map.setView([row.lat, row.lng], 17);
+        if (row.marker) row.marker.openPopup();
       }
     };
 
@@ -135,27 +147,44 @@ function updateList(rows) {
   });
 }
 
-// Attach search handler (by KerbsideID or street name)
+// Attach search & filter handlers
 const searchInput = document.getElementById('searchBox');
-if (searchInput) {
-  searchInput.addEventListener('input', (e) => {
-    const term = (e.target.value || '').toLowerCase();
-    if (!term) {
-      currentFilteredRows = allRows.slice();
-      updateList(currentFilteredRows);
-      return;
-    }
-    currentFilteredRows = allRows.filter((row) => {
-      const id = String(row.KerbsideID ?? '').toLowerCase();
-      const status = String(row.Status_Description ?? '').toLowerCase();
-      const street = String(row.OnStreet ?? '').toLowerCase();
-      return id.includes(term) || status.includes(term) || street.includes(term);
-    });
-    updateList(currentFilteredRows);
+const onlyAvailableCheckbox = document.getElementById('onlyAvailable');
+
+// Apply both search term and "only available" filter
+function applyFilters() {
+  const term = (searchInput.value || '').toLowerCase();
+  const onlyAvailable = onlyAvailableCheckbox.checked;
+
+  currentFilteredRows = rowsAll.filter((row) => {
+    const id = String(row.KerbsideID ?? '').toLowerCase();
+    const status = String(row.Status_Description ?? '').toLowerCase();
+    const street = String(row.OnStreet ?? '').toLowerCase();
+
+    // 1) Search filter
+    const matchesSearch =
+      !term || id.includes(term) || status.includes(term) || street.includes(term);
+
+    // 2) Availability filter (true = only show unoccupied)
+    const matchesAvailability =
+      !onlyAvailable || status === 'unoccupied'; // lowercase compare
+
+    return matchesSearch && matchesAvailability;
   });
+
+  updateList(currentFilteredRows);
 }
 
+if (searchInput) {
+  searchInput.addEventListener('input', applyFilters);
+}
 
+if (onlyAvailableCheckbox) {
+  onlyAvailableCheckbox.addEventListener('change', applyFilters);
+}
+
+// ----------------------------
 // Kick off + 10s auto-refresh
-loadParkingData();
-setInterval(loadParkingData, 10000); // refresh every 10 seconds
+// ----------------------------
+loadParking();
+setInterval(loadParking, 10000); // refresh every 10 seconds
