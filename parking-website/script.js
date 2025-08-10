@@ -1,104 +1,161 @@
 // ========================================================================================
-// script.js 
-// Include: map loading + GeoJSON data loading + auto-refresh + relative time display
+// script.js (CSV-driven rendering)
+// Uses Leaflet + Papa Parse to load a CSV and plot parking bays.
+// List + search + 10s auto-refresh + unified "Last updated" display.
 // ========================================================================================
 
-// Initial Map
+// Map initialization
 const map = L.map('map').setView([-37.8136, 144.9631], 14);
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: 'Map data © OpenStreetMap contributors'
 }).addTo(map);
 
-let parkingLayer = null;
-let allFeatures = [];
+// Global state
+const CSV_URL = '../parking-dataset/parking_results_for_comparison.csv';
 
-// Relative time display (minutes/hours/days)
-function getRelativeTime(timestamp) {
+let lastRefreshed = null;       // unified "Last updated" timestamp (when CSV was fetched)
+let markersLayer = L.layerGroup().addTo(map);  // holds all circle markers
+let allRows = [];               // array of parsed CSV rows (objects)
+let currentFilteredRows = [];   // rows after search filter (for list rendering)
+
+// Utility: relative time formatter
+function getRelativeTime(dateObj) {
+  if (!dateObj) return 'just now';
   const now = new Date();
-  const past = new Date(timestamp);
-  const diffMs = now - past;
+  const diffMs = now - dateObj;
   const diffSecs = Math.floor(diffMs / 1000);
   const diffMins = Math.floor(diffSecs / 60);
   const diffHours = Math.floor(diffMins / 60);
-  if (diffSecs < 1) return "just now";
+
+  if (diffSecs < 1) return 'just now';
   if (diffSecs < 60) return `${diffSecs} seconds ago`;
-  if (diffMins === 1) return "1 minute ago";
+  if (diffMins === 1) return '1 minute ago';
   if (diffMins < 60) return `${diffMins} minutes ago`;
   if (diffHours < 24) return `${diffHours} hours ago`;
   return `${Math.floor(diffHours / 24)} days ago`;
 }
 
-// GeoJSON data loading
-let lastRefreshed = null;
-
+// Core: load & render CSV
 function loadParkingData() {
-  if (parkingLayer) map.removeLayer(parkingLayer);
+  // Clear old markers from the map
+  markersLayer.clearLayers();
 
-  fetch('https://data.melbourne.vic.gov.au/api/v2/catalog/datasets/on-street-parking-bay-sensors/exports/geojson')
-    .then(res => res.json())
-    .then(data => {
-      lastRefreshed = new Date(); // Updating the Unified Time
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,       // use the first row as keys
+    dynamicTyping: true, // auto-convert numbers/booleans
+    skipEmptyLines: true,
+    complete: (result) => {
+      lastRefreshed = new Date();
 
-      allFeatures = data.features;
+      // Filter out rows that don't have coordinates
+      allRows = (result.data || []).filter(r =>
+        r &&
+        typeof r.latitude !== 'undefined' &&
+        typeof r.longitude !== 'undefined' &&
+        r.latitude !== null && r.longitude !== null &&
+        r.latitude !== '' && r.longitude !== ''
+      );
 
-      parkingLayer = L.geoJSON(data, {
-        pointToLayer: (feature, latlng) => {
-          const occupied = feature.properties.status_description === 'Present';
-          const color = occupied ? 'red' : 'green';
-          return L.circleMarker(latlng, { color, radius: 6 });
-        },
-        onEachFeature: (feature, layer) => {
-          const desc = feature.properties.status_description;
-          const updated = getRelativeTime(lastRefreshed); // Use the Unified Time
+      // Render markers on the map
+      allRows.forEach((row) => {
+        const lat = Number(row.latitude);
+        const lng = Number(row.longitude);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-          layer.bindPopup(`
-            <strong>Kerbside ID:</strong> ${feature.properties.kerbsideid}<br>
-            <strong>Status:</strong> ${desc}<br>
-            <strong>Last updated:</strong> ${updated}
-          `);
+        // Color by status: Present = occupied (red), others = unoccupied (green)
+        const isOccupied = String(row.Status_Description || '').trim() === 'Present';
+        const color = isOccupied ? 'red' : 'green';
 
-          feature.layerRef = layer;
-        }
-      }).addTo(map);
+        const marker = L.circleMarker([lat, lng], {
+          radius: 6,
+          color
+        });
 
-      updateList(allFeatures);
-    });
+        // Build popup HTML using fields from your CSV
+        const updated = getRelativeTime(lastRefreshed);
+        const popupHtml = `
+          <strong>Kerbside ID:</strong> ${row.KerbsideID ?? '—'}<br>
+          <strong>Status:</strong> ${row.Status_Description ?? 'Unknown'}<br>
+          <strong>Street:</strong> ${row.OnStreet ?? '—'}<br>
+          <strong>Between:</strong> ${row.StreetFrom ?? '—'} and ${row.StreetTo ?? '—'}<br>
+          <strong>Zone:</strong> ${row.Zone_Number ?? '—'}<br>
+          <strong>Segment:</strong> ${row.RoadSegmentID ?? '—'}<br>
+          <strong>Last updated:</strong> ${updated}
+        `;
+        marker.bindPopup(popupHtml);
+
+        // Attach a reference so we can open popup from the list
+        row.__lat = lat;
+        row.__lng = lng;
+        row.__marker = marker;
+
+        marker.addTo(markersLayer);
+      });
+
+      // Update the side list with all rows initially
+      currentFilteredRows = allRows.slice();
+      updateList(currentFilteredRows);
+    },
+    error: (err) => {
+      console.error('Failed to parse CSV:', err);
+    }
+  });
 }
 
-function updateList(features) {
-  const list = document.getElementById("parkingList");
-  list.innerHTML = "";
+// List & search
+function updateList(rows) {
+  const list = document.getElementById('parkingList');
+  if (!list) return;
+  list.innerHTML = '';
 
-  features.slice(0, 100).forEach(f => {
-    const li = document.createElement("li");
-    const status = f.properties.status_description;
+  // Limit to avoid rendering too many list items at once
+  rows.slice(0, 200).forEach((row) => {
+    const li = document.createElement('li');
+
     const updated = getRelativeTime(lastRefreshed);
+    const idText = row.KerbsideID ? String(row.KerbsideID) : 'Unknown ID';
+    const statusText = row.Status_Description ? String(row.Status_Description) : 'Unknown';
+    const streetText = row.OnStreet ? String(row.OnStreet) : '';
     li.innerHTML = `
-      <strong>${f.properties.kerbsideid || "Unknown ID"}</strong><br>
-      ${status} - ${updated}
+      <strong>${idText}</strong><br>
+      ${statusText} - ${updated}<br>
+      <small>${streetText}</small>
     `;
+
     li.onclick = () => {
-      const latlng = f.geometry.coordinates.reverse(); // GeoJSON is [lng, lat]
-      map.setView(latlng, 17);
-      f.layerRef.openPopup();
+      if (typeof row.__lat === 'number' && typeof row.__lng === 'number') {
+        map.setView([row.__lat, row.__lng], 17);
+        if (row.__marker) row.__marker.openPopup();
+      }
     };
+
     list.appendChild(li);
   });
 }
 
-// Search
-document.getElementById("searchBox").addEventListener("input", e => {
-  const term = e.target.value.toLowerCase();
-  const filtered = allFeatures.filter(f => {
-    const id = f.properties.kerbsideid?.toLowerCase() || "";
-    const desc = f.properties.status_description?.toLowerCase() || "";
-    return id.includes(term) || desc.includes(term);
+// Attach search handler (by KerbsideID or street name)
+const searchInput = document.getElementById('searchBox');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    const term = (e.target.value || '').toLowerCase();
+    if (!term) {
+      currentFilteredRows = allRows.slice();
+      updateList(currentFilteredRows);
+      return;
+    }
+    currentFilteredRows = allRows.filter((row) => {
+      const id = String(row.KerbsideID ?? '').toLowerCase();
+      const status = String(row.Status_Description ?? '').toLowerCase();
+      const street = String(row.OnStreet ?? '').toLowerCase();
+      return id.includes(term) || status.includes(term) || street.includes(term);
+    });
+    updateList(currentFilteredRows);
   });
-  updateList(filtered);
-});
+}
 
-// Initial Loading
+
+// Kick off + 10s auto-refresh
 loadParkingData();
-
-// Refresh the data every 60s
-setInterval(loadParkingData, 10000);
+setInterval(loadParkingData, 10000); // refresh every 10 seconds
