@@ -65,3 +65,32 @@ main {
   height: 95%;
   width: 98%;
 }
+
+/* Prediction legend (small fixed card on top of the map) */
+.legend {
+  position: absolute;     /* sits over the map */
+  right: 16px;
+  bottom: 16px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 999;
+}
+
+.legend .swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 1px solid #999;
+}
+
+.legend .swatch-high { background: #3cb371; }
+.legend .swatch-mid  { background: #ffd166; }
+.legend .swatch-low  { background: #ef476f; }
+.legend .swatch-na   { background: #cccccc; }

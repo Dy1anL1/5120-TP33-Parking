@@ -1,22 +1,22 @@
-// ========================================================================================
-// script.js
-// - loads a CSV (Papa Parse)
-// - draws points with Leaflet
-// - supports search + "Only show available" filter
-// - refreshes every 10s
-// ========================================================================================
+/* =====================================================================
+      script.js
+          - loads a CSV (Papa Parse)
+          - draws points with Leaflet
+          - supports search + "Only show available" filter
+          - refreshes every 10s
+   ===================================================================== */
 
-// --------------------
-// Map initialization
-// --------------------
+/* --------------------
+    Map initialization
+   -------------------- */
 const map = L.map('map').setView([-37.8136, 144.9631], 14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: 'Map data © OpenStreetMap contributors'
 }).addTo(map);
 
-// -------------
-// Global state
-// -------------
+/* --------------
+    Global state
+   -------------- */
 const CSV_URL = '../parking-dataset/parking_results_for_comparison.csv';
 
 // state we keep in memory
@@ -25,11 +25,14 @@ let layerOfBays = L.layerGroup().addTo(map);   // current markers on map
 let rowsAll = [];                              // all parsed rows
 let currentFilteredRows = [];                  // rows after filters
 
+// Layer to hold the prediction grid polygons
+let predictionLayer = L.layerGroup().addTo(map);
+
 let dataReady = false;
 
-// --------------------------------------------------------
-// Utility: relative time formatter: like "3 minutes ago"
-// --------------------------------------------------------
+/* --------------------------------------------------------
+    Utility: relative time formatter: like "3 minutes ago"
+   -------------------------------------------------------- */
 function getRelativeTime(dateObj) {
   if (!dateObj) return 'just now';
   const now = new Date();
@@ -46,9 +49,99 @@ function getRelativeTime(dateObj) {
   return `${Math.floor(hr / 24)} days ago`;
 }
 
-// ----------------------------------------
-// Use Haversine function to get distance
-// ----------------------------------------
+// approx meters per degree at Melbourne latitude (~111,111 m/deg for lat; lon scaled by cos(lat))
+function latMetersToDeg(m) {
+  return m / 111111;
+}
+function lonMetersToDeg(m, latDeg) {
+  return m / (111111 * Math.cos(latDeg * Math.PI / 180));
+}
+
+// classify by unoccupied ratio
+function getAvailabilityLevel(ratio) {
+  if (ratio === null) return 'na';
+  if (ratio > 0.5) return 'high';
+  if (ratio >= 0.2) return 'mid';
+  return 'low';
+}
+
+function getLevelColor(level) {
+  if (level === 'high') return '#3cb371'; // green
+  if (level === 'mid')  return '#ffd166'; // yellow
+  if (level === 'low')  return '#ef476f'; // red
+  return '#cccccc';                       // grey (no data)
+}
+
+/* -------------------------------------------------------------------------------
+    Build a 3x3 grid centered at (destLat, destLon). Each cell ~300m.
+    For each cell, compute unoccupied ratio using rowsAll (current CSV snapshot).
+    Draw colored rectangles and bind popups with counts and ratio.
+   ------------------------------------------------------------------------------- */
+function drawPredictionGrid(centerLat, centerLon) {
+  // Clear previous prediction overlays
+  predictionLayer.clearLayers();
+
+  const cellSizeM = 300;   // each cell ~300 meters
+  const halfGrid = 1;      // 3x3 grid => offsets = -1, 0, +1
+  const dLat = latMetersToDeg(cellSizeM);
+  const dLon = lonMetersToDeg(cellSizeM, centerLat);
+
+  // Grid center aligned to destination
+  for (let gx = -halfGrid; gx <= halfGrid; gx++) {
+    for (let gy = -halfGrid; gy <= halfGrid; gy++) {
+      const lat1 = centerLat + gy * dLat;
+      const lat2 = centerLat + (gy + 1) * dLat;
+      const lon1 = centerLon + gx * dLon;
+      const lon2 = centerLon + (gx + 1) * dLon;
+
+      // gather bays in this cell
+      let totalCount = 0;
+      let freeCount = 0;
+
+      rowsAll.forEach(row => {
+        const lat = Number(row.latitude);
+        const lon = Number(row.longitude);
+        if (Number.isNaN(lat) || Number.isNaN(lon)) return;
+        if (lat >= Math.min(lat1, lat2) && lat <= Math.max(lat1, lat2) &&
+            lon >= Math.min(lon1, lon2) && lon <= Math.max(lon1, lon2)) {
+          totalCount++;
+          const status = String(row.Status_Description || '').trim().toLowerCase();
+          if (status === 'unoccupied') freeCount++;
+        }
+      });
+
+      const ratio = totalCount > 0 ? freeCount / totalCount : null;
+      const level = getAvailabilityLevel(ratio);
+      const color = getLevelColor(level);
+
+      // draw rectangle cell
+      const rect = L.rectangle(
+        [
+          [Math.min(lat1, lat2), Math.min(lon1, lon2)],
+          [Math.max(lat1, lat2), Math.max(lon1, lon2)]
+        ],
+        {
+          color: '#666',
+          weight: 1,
+          fillColor: color,
+          fillOpacity: 0.35
+        }
+      );
+
+      const percentText = ratio === null ? '-' : `${Math.round(ratio * 100)}%`;
+      rect.bindPopup(
+        `<strong>Availability:</strong> ${level.toUpperCase()}<br>` +
+        `<strong>Free bays:</strong> ${freeCount} / ${totalCount} (${percentText})`
+      );
+
+      rect.addTo(predictionLayer);
+    }
+  }
+}
+
+/* ----------------------------------------
+    Use Haversine function to get distance
+   ---------------------------------------- */
 function haversineMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000; // earth radius in m
   const toRad = (d) => d * Math.PI / 180;
@@ -136,9 +229,9 @@ function renderMarkers(rows) {
   });
 }
 
-// ------------------------------------------
-// main loader: grab the CSV and stash rows
-// ------------------------------------------
+/* ------------------------------------------
+    main loader: grab the CSV and stash rows
+   ------------------------------------------ */
 function loadParking() {
   // Clear old markers from the map
   layerOfBays.clearLayers();
@@ -206,9 +299,9 @@ function loadParking() {
   });
 }
 
-// --------------
-// List & search
-// --------------
+/* --------------
+    List & search
+   -------------- */
 function updateList(rows) {
   const list = document.getElementById('parkingList');
   if (!list) return;
@@ -273,6 +366,7 @@ if (destBtn) {
 
     // 3) find nearest unoccupied bay
     findNearestFromDestination(pt.lat, pt.lon);
+    drawPredictionGrid(pt.lat, pt.lon);
   });
 }
 
@@ -311,8 +405,8 @@ function applyFilters() {
   updateList(currentFilteredRows);
 }
 
-// ----------------------------------
-// initial pull + refresh every 10s
-// ----------------------------------
+/* ----------------------------------
+    initial pull + refresh every 10s
+   ---------------------------------- */
 loadParking();
 setInterval(loadParking, 10000); // refresh every 10 seconds
