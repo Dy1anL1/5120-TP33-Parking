@@ -44,6 +44,72 @@ function getRelativeTime(dateObj) {
   return `${Math.floor(hr / 24)} days ago`;
 }
 
+// ----------------------------------------
+// Use Haversine function to get distance
+// ----------------------------------------
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // earth radius in m
+  const toRad = (d) => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Geocode with Nominatim (returns {lat, lon} or null)
+async function geocodeAddress(q) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}&addressdetails=0`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) return null;
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+}
+
+let lastHighlight = null; // remember the highlighted marker to reset its style
+
+// Find nearest unoccupied bay from dest coords, highlight on map
+function findNearestFromDestination(destLat, destLon) {
+  // pick only unoccupied rows that have a marker
+  const candidates = rowsAll.filter(r => {
+    const status = String(r.Status_Description ?? '').toLowerCase().trim();
+    return status === 'unoccupied' && r.marker && typeof r.lat === 'number' && typeof r.lng === 'number';
+  });
+
+  if (candidates.length === 0) {
+    alert('No available bays found at the moment.');
+    return;
+  }
+
+  // compute distances
+  let best = null;
+  let bestDist = Infinity;
+  candidates.forEach(r => {
+    const d = haversineMeters(destLat, destLon, r.lat, r.lng);
+    if (d < bestDist) { bestDist = d; best = r; }
+  });
+
+  if (!best) {
+    alert('No result found.');
+    return;
+  }
+
+  // reset previous highlight
+  if (lastHighlight && lastHighlight.marker) {
+    lastHighlight.marker.setStyle({ radius: 6, weight: 1 });
+  }
+
+  // style + focus the nearest
+  best.marker.setStyle({ radius: 10, weight: 3 }); // simple visual highlight
+  lastHighlight = best;
+
+  // move map and open popup
+  map.setView([best.lat, best.lng], 17);
+  best.marker.openPopup();
+}
+
 // Render markers for the given rows: clears the layer and re-adds only those rows' markers
 function renderMarkers(rows) {
   layerOfBays.clearLayers();
@@ -148,6 +214,33 @@ function updateList(rows) {
     };
 
     list.appendChild(li);
+  });
+}
+
+const destInput = document.getElementById('destInput');
+const destBtn = document.getElementById('destBtn');
+
+if (destBtn) {
+  destBtn.addEventListener('click', async () => {
+    const q = (destInput.value || '').trim();
+    if (!q) {
+      alert('Please enter a destination.');
+      return;
+    }
+    // 1) geocode destination
+    const pt = await geocodeAddress(q);
+    if (!pt) {
+      alert('Destination not found. Try a more specific address.');
+      return;
+    }
+    // 2) drop a small marker for destination (optional)
+    L.circleMarker([pt.lat, pt.lon], { radius: 6, color: '#0066ff' })
+      .addTo(layerOfBays)
+      .bindPopup('Destination')
+      .openPopup();
+
+    // 3) find nearest unoccupied bay
+    findNearestFromDestination(pt.lat, pt.lon);
   });
 }
 
