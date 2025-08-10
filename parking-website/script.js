@@ -17,11 +17,13 @@ function getRelativeTime(timestamp) {
   const now = new Date();
   const past = new Date(timestamp);
   const diffMs = now - past;
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "just now";
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffSecs < 1) return "just now";
+  if (diffSecs < 60) return `${diffSecs} seconds ago`;
   if (diffMins === 1) return "1 minute ago";
   if (diffMins < 60) return `${diffMins} minutes ago`;
-  const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours} hours ago`;
   return `${Math.floor(diffHours / 24)} days ago`;
 }
