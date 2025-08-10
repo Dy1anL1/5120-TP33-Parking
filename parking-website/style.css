@@ -94,3 +94,103 @@ main {
 .legend .swatch-mid  { background: #ffd166; }
 .legend .swatch-low  { background: #ef476f; }
 .legend .swatch-na   { background: #cccccc; }
+
+/* =======================
+        Prediction Feature Styles
+   ======================= */
+
+/* Prediction panel styles */
+
+/* Prediction button styles */
+#predictBtn {
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+#predictBtn:hover:not(:disabled) {
+  background: #45a049 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+#predictBtn:disabled {
+  background: #cccccc !important;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Prediction result display styles */
+#predictionResult {
+  margin-top: 10px;
+}
+
+#predictionResult div {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+#predictionResult div:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+/* Prediction marker legend */
+.prediction-legend {
+  position: absolute;
+  right: 16px;
+  bottom: 120px; /* Above the original legend */
+  background: rgba(255,255,255,0.95);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 999;
+}
+
+.prediction-legend .prediction-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 1px solid #999;
+  border-radius: 50%;
+}
+
+.prediction-legend .prediction-swatch-available { 
+  background: #00ff00; 
+  border-color: #00cc00;
+}
+
+.prediction-legend .prediction-swatch-occupied { 
+  background: #ff0000; 
+  border-color: #cc0000;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+  
+  #sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+  }
+  
+  #map {
+    height: 60vh;
+    width: 100%;
+  }
+  
+  .legend, .prediction-legend {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    margin: 10px;
+  }
+}

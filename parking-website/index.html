@@ -19,6 +19,16 @@
         <button id="destBtn" style="width:100%;margin-top:6px;padding:8px;">Find nearest</button>
       </div>
 
+      <!-- Prediction Feature -->
+      <div style="margin-bottom:15px; padding:10px; background:#f5f5f5; border-radius:5px;">
+        <h3 style="margin:0 0 10px 0; font-size:14px;">Predict Parking Availability in 1 Hour</h3>
+        <div style="display:flex; gap:5px;">
+          <button id="predictBtn" style="flex:1; padding:8px; background:#4CAF50; color:white; border:none; border-radius:3px; cursor:pointer;">Predict in 1 Hour</button>
+          <button id="clearPredictionBtn" style="padding:8px; background:#f44336; color:white; border:none; border-radius:3px; cursor:pointer; font-size:12px;">Clear</button>
+        </div>
+        <div id="predictionResult" style="margin-top:10px; font-size:12px;"></div>
+      </div>
+
       <input type="text" id="searchBox" placeholder="Search by street or ID..." />
       <label style="display:block; margin:8px 0;">
         <input type="checkbox" id="onlyAvailable" /> Only show available
@@ -33,6 +43,10 @@
         <div><span class="swatch swatch-mid"></span> Middle (20-50%)</div>
         <div><span class="swatch swatch-low"></span> Low (&lt; 20%)</div>
         <div><span class="swatch swatch-na"></span> No data</div>
+      </div>
+      <div id="predictionLegend" class="prediction-legend" aria-live="polite" style="display: none;">
+        <div><span class="prediction-swatch prediction-swatch-available"></span> Predicted Available</div>
+        <div><span class="prediction-swatch prediction-swatch-occupied"></span> Predicted Occupied</div>
       </div>
     </main>
   </div>
