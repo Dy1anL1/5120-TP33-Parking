@@ -17,13 +17,15 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // -------------
 // Global state
 // -------------
-const CSV_URL = '../parking-dataset/parking_results_for_comparison.csv';
+const CSV_URL = `${location.origin}/5120-TP33-Parking/parking-dataset/parking_results_for_comparison.csv`;
 
 // state we keep in memory
 let lastRefreshed = null;                      // when we last pulled the CSV
 let layerOfBays = L.layerGroup().addTo(map);  // current markers on map
 let rowsAll = [];                              // all parsed rows
 let currentFilteredRows = [];                  // rows after filters
+
+let dataReady = false;
 
 // --------------------------------------------------------
 // Utility: relative time formatter: like "3 minutes ago"
@@ -125,7 +127,7 @@ function loadParking() {
   // Clear old markers from the map
   layerOfBays.clearLayers();
 
-  Papa.parse(CSV_URL, {
+  Papa.parse(`${CSV_URL}?t=${Date.now()}`, {
     download: true,
     header: true,       // use the first row as keys
     dynamicTyping: true, // auto-convert numbers/booleans
@@ -176,6 +178,8 @@ function loadParking() {
       // Update the side list with all rows initially
       currentFilteredRows = rowsAll.slice();
       applyFilters();  // this will update both the LIST and the MAP
+
+      dataReady = true;
     },
     error: (err) => {
       console.error('Failed to parse CSV:', err);
@@ -222,6 +226,15 @@ const destBtn = document.getElementById('destBtn');
 
 if (destBtn) {
   destBtn.addEventListener('click', async () => {
+    if (!dataReady) {
+      alert('Data is still loading. Please try again in a moment.');
+      return;
+    }
+    if (!rowsAll || rowsAll.length === 0) {
+      alert('No parking data loaded. Please check the CSV path or try refreshing.');
+      return;
+    }
+    
     const q = (destInput.value || '').trim();
     if (!q) {
       alert('Please enter a destination.');
