@@ -17,7 +17,19 @@
       if (pwd === "tp33") {
         document.body.style.display = "block"; // Display page
       } else {
-        document.body.innerHTML = "<h2>Access Denied</h2>";
+        document.body.innerHTML = `
+        <div style="
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          height:100vh;
+          font-size:80px;
+          font-weight:bold;
+          color:#c0392b;
+        ">
+          Access Denied
+        </div>
+      `;
         document.body.style.display = "block";
         if (window.stop) window.stop(); // Blocking subsequent loads
       }
