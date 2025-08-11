@@ -3,20 +3,27 @@
 <head>
   <meta charset="utf-8">
   <title>Melbourne Parking Map</title>
-
-  <!-- Password protection -->
-  <script>
-    const pwd = prompt("Please enter the password:");
-    if (pwd !== "tp33") {
-      document.body.innerHTML = "<h2>Access Denied</h2>";
-      throw new Error("Wrong password");
-    }
-  </script>
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="style.css"/>
+  
+  <!-- Hide content on page load -->
+  <style>body { display: none; }</style>
 </head>
 <body>
+  <!-- password verification -->
+  <script>
+    (function () {
+      const pwd = prompt("Please enter the password:");
+      if (pwd === "tp33") {
+        document.body.style.display = "block"; // Display page
+      } else {
+        document.body.innerHTML = "<h2>Access Denied</h2>";
+        document.body.style.display = "block";
+        if (window.stop) window.stop(); // Blocking subsequent loads
+      }
+    })();
+  </script>
+
   <header>
     <h1>Melbourne CBD Parking Availability</h1>
   </header>
