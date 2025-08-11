@@ -3,6 +3,16 @@
 <head>
   <meta charset="utf-8">
   <title>Melbourne Parking Map</title>
+
+  <!-- Password protection -->
+  <script>
+    const pwd = prompt("Please enter the password:");
+    if (pwd !== "tp33") {
+      document.body.innerHTML = "<h2>Access Denied</h2>";
+      throw new Error("Wrong password");
+    }
+  </script>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="style.css"/>
 </head>
